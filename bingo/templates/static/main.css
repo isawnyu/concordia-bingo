@@ -1,0 +1,98 @@
+@import url("reset-fonts-grids.css");
+
+html {
+  font-size: 62.5%;
+}
+
+body {
+  font-family: "Georgia", serif;
+  font-size: 1.4em;
+  color: #333;
+  background-color: #fff;
+  margin: 3em 6em;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: "Verdana", sans-serif;
+}
+
+h1 {
+  letter-spacing: 0.12em;
+}
+
+h2 {
+  letter-spacing: 0.08em;
+}
+
+h1 + h5, h2 + h5, h3 + h5 {
+  margin-top: -1em;
+}
+
+#hd {
+  text-align: center;
+}
+
+p {
+  margin: 1em auto;
+}
+
+label {
+  font-weight: bold;
+}
+
+a:link {
+    color: #222;
+}
+
+a:visited {
+    color: #555;
+}
+
+a:hover {
+    color: #000;
+}
+
+a:active {
+}
+
+a:focus {
+}
+
+.path {
+  font-family: "Tahoma";
+  font-size: 1.2em;
+  color: #333;
+}
+
+ul.path {
+  text-align: left;
+  margin: 1em 0em;
+}
+
+ul.path > li {
+  display: inline;
+  list-style-type: none;
+}
+
+ul.path > li:after {
+  content: "\00BB";
+  font-family: "Tahoma", serif;
+  font-size: 14px;
+  padding-left: 6px;
+}
+
+ul.path > li.current:after {
+  content: "";
+}
+
+dt {
+  font-weight: bold;
+}
+
+dd {
+  margin-bottom: 1em;
+}
+
+div.yui-g {
+  margin-bottom: 4em;
+}

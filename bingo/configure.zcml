@@ -2,16 +2,48 @@
 
   <!-- this must be included for the view declarations to work -->
   <include package="repoze.bfg.includes" />
+  <include package="repoze.zcml" file="meta.zcml"/>
 
   <view
-     for=".models.MyModel"
-     view=".views.my_view"
-     />
+    for=".models.IModel"
+    view=".views.my_view"
+    />
 
   <view
-     for=".models.MyModel"
-     view=".views.static_view"
-     name="static"
-     />
+    for=".models.IBingoContainer"
+    view=".views.search_view"
+    />
+    
+  <view
+    for=".models.IModel"
+    view=".views.static_view"
+    name="static"
+    />
 
+  <adapter
+    factory="zope.app.keyreference.persistent.KeyReferenceToPersistent"
+    provides="zope.keyreference.interfaces.IKeyReference"
+    for=".models.IBingoItem"
+    />
+    
+  <!--subscriber
+    for=".models.IResource repoze.folder.interfaces.IObjectAddedEvent"
+    handler=".subscribers.resource_added"
+    /-->
+  
+  <!--subscriber
+    for=".models.IResource repoze.folder.interfaces.IObjectRemovedEvent"
+    handler=".subscribers.resource_removed"
+    /-->
+    
+  <!--subscriber
+    for=".models.IRelation repoze.folder.interfaces.IObjectAddedEvent"
+    handler=".subscribers.relation_added"
+    /-->
+
+  <!--subscriber
+    for=".models.IRelation repoze.folder.interfaces.IObjectRemovedEvent"
+    handler=".subscribers.relation_removed"
+    /-->
+    
 </configure>

@@ -1,0 +1,71 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  >
+
+<head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8"/>
+<title>Resources</title>
+<link href="/@@static/main.css" rel="stylesheet"/>
+<link rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"/>
+</head>
+
+<body>
+<div id="doc" class="yui-t7">
+
+<div id="hd">
+
+<h1>{{ title }}</h1>
+
+</div><!-- id="hd" -->
+
+<div id="bd">
+
+<div class="yui-g">
+  <p>Search for resources and relations:</p>
+  
+  <form id="search-form" method="GET" action="">
+    <input type="text" name="q" size="60" value="{{ request.params.get('q', '') }}"/>
+    <input type="submit" name="search" value="Search"/>
+  </form>
+
+</div><!-- class="yui-g" -->
+
+<div class="yui-g">
+  
+  {% if request.params.get('search') %}
+  <h3>Resources</h3>
+  <ul>
+  {% for r in resources %}
+    <li>{{ r|e }}</li>
+  {% endfor %}
+  </ul>
+
+  <h3>Subject of Relations</h3>
+  <ul>
+  {% for r in subjects %}
+    <li>{{ r|e }}</li>
+  {% endfor %}
+  </ul>
+  
+  <h3>Object of Relations</h3>
+  <ul>
+  {% for r in objects %}
+    <li>{{ r|e }}</li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+  
+</div><!-- class="yui-g" -->
+
+</div><!-- id="bd" -->
+
+<div id="ft">
+<p class="rights">Some rights reserved. <a rel="license" href="http://creativecommons.org/licenses/by/3.0/">Creative Commons 
+Attribution 3.0 License</a>, Institute for the Study of the Ancient World, New York University.</p>
+</div><!-- id="ft" -->
+
+</div><!-- id="doc" -->
+</body>
+</html>

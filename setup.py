@@ -31,8 +31,10 @@ setup(name='Bingo',
       zip_safe=False,
       install_requires=[
             'repoze.bfg',
+            'repoze.folder',
             'repoze.zodbconn',
             'repoze.tm',
+            'repoze.vhm',
             'ZODB3',
             ],
       tests_require=[
