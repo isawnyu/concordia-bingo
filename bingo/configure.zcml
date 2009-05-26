@@ -3,23 +3,31 @@
   <!-- this must be included for the view declarations to work -->
   <include package="repoze.bfg.includes" />
   <include package="repoze.zcml" file="meta.zcml"/>
-
+  <include package="repoze.bfg.httprequest"/>
+  
   <view
     for=".models.IModel"
     view=".views.my_view"
     />
 
   <view
-    for=".models.IBingoContainer"
-    view=".views.search_view"
-    />
-    
-  <view
     for=".models.IModel"
     view=".views.static_view"
     name="static"
     />
+    
+  <view
+    for=".models.IBingoContainer"
+    request_type=".views.IGETRequest"
+    view=".views.search_view"
+    />
 
+  <view
+    for=".models.IBingoContainer"
+    request_type=".views.IPOSTRequest"
+    view=".views.append_view"
+    />
+  
   <adapter
     factory="zope.app.keyreference.persistent.KeyReferenceToPersistent"
     provides="zope.keyreference.interfaces.IKeyReference"

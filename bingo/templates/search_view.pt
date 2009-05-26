@@ -36,23 +36,28 @@
   
   {% if request.params.get('search') %}
   <h3>Resources</h3>
-  <ul>
+  <dl>
   {% for r in resources %}
-    <li>{{ r|e }}</li>
+    <dt><a href="{{ r.url }}">{{ r.title }}</a></dt>
+    <dd>{{ r.summary }}</dd>
   {% endfor %}
-  </ul>
+  </dl>
 
   <h3>Subject of Relations</h3>
   <ul>
   {% for r in subjects %}
-    <li>{{ r|e }}</li>
+    {% set subject = r.subjects[0] %}
+    {% set object = r.objects[0] %}
+    <li><a href="{{ subject.url}}">{{ subject.title }}</a> {{ r.predicate }} <a href="{{ object.url}}">{{ object.title }}</a></li>
   {% endfor %}
   </ul>
   
   <h3>Object of Relations</h3>
   <ul>
   {% for r in objects %}
-    <li>{{ r|e }}</li>
+    {% set subject = r.subjects[0] %}
+    {% set object = r.objects[0] %}
+    <li><a href="{{ subject.url}}">{{ subject.title }}</a> {{ r.predicate }} <a href="{{ object.url}}">{{ object.title }}</a></li>
   {% endfor %}
   </ul>
   {% endif %}
