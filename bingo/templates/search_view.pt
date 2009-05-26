@@ -23,21 +23,25 @@
 <div id="bd">
 
 <div class="yui-g">
-  <p>Search for resources and relations:</p>
+  <p>Search for resources using <a href="http://docs.zope.org/zope3/Code/zope/index/text/textindex.txt/index.html">zope.index</a>. By default, it uses an "Okapi" inverted index and a lexicon with a pipeline consistening is a simple word splitter, a case normalizer, and a stop-word remover.</p>
   
   <form id="search-form" method="GET" action="">
     <input type="text" name="q" size="60" value="{{ request.params.get('q', '') }}"/>
-    <input type="submit" name="search" value="Search"/>
+    <input type="submit"/>
   </form>
 
+  {% if errormsg %}
+  <p class="error">{{ errormsg|e }}</p>
+  {% endif %}
+  
 </div><!-- class="yui-g" -->
 
 <div class="yui-g">
   
-  {% if request.params.get('search') %}
+  {% if results %}
   <h3>Resources</h3>
   <dl>
-  {% for r in resources %}
+  {% for r in results.get('resources', []) %}
     <dt><a href="{{ r.url }}">{{ r.title }}</a></dt>
     <dd>{{ r.summary }}</dd>
   {% endfor %}
@@ -45,7 +49,7 @@
 
   <h3>Subject of Relations</h3>
   <ul>
-  {% for r in subjects %}
+  {% for r in results.get('subjects', []) %}
     {% set subject = r.subjects[0] %}
     {% set object = r.objects[0] %}
     <li><a href="{{ subject.url}}">{{ subject.title }}</a> {{ r.predicate }} <a href="{{ object.url}}">{{ object.title }}</a></li>
@@ -54,7 +58,7 @@
   
   <h3>Object of Relations</h3>
   <ul>
-  {% for r in objects %}
+  {% for r in results.get('objects', []) %}
     {% set subject = r.subjects[0] %}
     {% set object = r.objects[0] %}
     <li><a href="{{ subject.url}}">{{ subject.title }}</a> {{ r.predicate }} <a href="{{ object.url}}">{{ object.title }}</a></li>

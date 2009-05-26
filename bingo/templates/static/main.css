@@ -48,6 +48,10 @@ p {
   margin: 1em auto;
 }
 
+p.error {
+  color: #cc0000;
+}
+
 label {
   font-weight: bold;
 }

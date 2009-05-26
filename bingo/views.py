@@ -19,28 +19,34 @@ def my_view(context, request):
                                        project = 'Bingo')
                                        
 def search_view(context, request):
-    if 'q' in request.params and 'search' in request.params:
+    results = None
+    errormsg = None
+    if 'q' in request.params:
         md = context.metadata_catalog
-        numdocs, results = md.search(text=request.params['q'])
-        resources = sorted(context.intids.getObject(r) for r in results)
-        rc = context.relation_catalog
-        query = rc.tokenizeQuery
-        subjects = rc.findRelations(
-            dict(subject=zc.relation.catalog.any(*results))
-            )
-        objects = rc.findRelations(
-            dict(object=zc.relation.catalog.any(*results))
-            )
-    else:
-        resources = None
-        subjects = None
-        objects = None
+        try:
+            numdocs, results = md.search(text=request.params['q'])
+            resources = sorted(context.intids.getObject(r) for r in results)
+            rc = context.relation_catalog
+            query = rc.tokenizeQuery
+            subjects = rc.findRelations(
+                dict(subject=zc.relation.catalog.any(*results))
+                )
+            objects = rc.findRelations(
+                dict(object=zc.relation.catalog.any(*results))
+                )
+            results = dict(
+                        resources=resources, 
+                        subjects=subjects, 
+                        objects=objects
+                        )
+        except Exception, e:
+            errormsg = str(e)
+        # endif
     return render_template_to_response('templates/search_view.pt',
                                        title=context.title,
                                        request=request,
-                                       resources=resources,
-                                       subjects=subjects,
-                                       objects=objects
+                                       results=results,
+                                       errormsg=errormsg
                                        )
 
 def append_view(context, request):
