@@ -49,6 +49,7 @@ p {
 }
 
 p.error {
+  font-weight: bold;
   color: #cc0000;
 }
 

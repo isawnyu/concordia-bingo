@@ -23,7 +23,7 @@
 <div id="bd">
 
 <div class="yui-g">
-  <p>Search for resources using <a href="http://docs.zope.org/zope3/Code/zope/index/text/textindex.txt/index.html">zope.index</a>. By default, it uses an "Okapi" inverted index and a lexicon with a pipeline consistening is a simple word splitter, a case normalizer, and a stop-word remover.</p>
+  <p>Search for resources using an "Okapi" inverted index and a lexicon with a pipeline consisting of a simple word splitter, a case normalizer, and a stop-word remover.</p>
   
   <form id="search-form" method="GET" action="">
     <input type="text" name="q" size="60" value="{{ request.params.get('q', '') }}"/>
