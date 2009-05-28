@@ -17,10 +17,17 @@ h1, h2, h3, h4, h5 {
 
 h1 {
   letter-spacing: 0.12em;
+  font-size: 2.1em;
+  font-weight: bold;
 }
 
 h2 {
   letter-spacing: 0.08em;
+}
+
+h3 {
+  font-size: 1.6em;
+  font-weight: bold;
 }
 
 h1 + h5, h2 + h5, h3 + h5 {
@@ -53,6 +60,10 @@ p.error {
   color: #cc0000;
 }
 
+span.predicate {
+  font-style: italic;
+}
+
 label {
   font-weight: bold;
 }
@@ -73,6 +84,12 @@ a:active {
 }
 
 a:focus {
+}
+
+.highlight { background-color: #ccc; }
+
+.form-field {
+  margin: 1em 0em;
 }
 
 .path {

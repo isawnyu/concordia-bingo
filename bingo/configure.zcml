@@ -25,9 +25,16 @@
   <view
     for=".models.IBingoContainer"
     request_type=".views.IPOSTRequest"
-    view=".views.append_view"
+    view=".views.append_item"
     />
-  
+
+  <view
+    for=".models.IBingoContainer"
+    request_type=".views.IGETRequest"
+    name="new"
+    view=".views.append_form"
+    />
+    
   <adapter
     factory="zope.app.keyreference.persistent.KeyReferenceToPersistent"
     provides="zope.keyreference.interfaces.IKeyReference"

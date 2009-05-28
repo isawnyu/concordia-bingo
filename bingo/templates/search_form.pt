@@ -12,6 +12,7 @@
 </head>
 
 <body>
+  
 <div id="doc" class="yui-t7">
 
 <div id="hd">
@@ -36,37 +37,28 @@
   
 </div><!-- class="yui-g" -->
 
+{% if results %}
 <div class="yui-g">
   
-  {% if results %}
-  <h3>Resources</h3>
+  <h3>Results</h3>
   <dl>
-  {% for r in results.get('resources', []) %}
-    <dt><a href="{{ r.url }}">{{ r.title }}</a></dt>
-    <dd>{{ r.summary }}</dd>
+  {% for r in results %}
+    {% set res = r['resource'] %}
+    {% set subs = r['subjects'] %}
+    {% set obs = r['objects'] %}
+    <dt><a href="{{ res.url }}">{{ res.title }}</a></dt>
+    <dd>{{ res.summary }}</dd>
+    {% for rel in subs %}
+    <dd><span class="predicate">{{ rel.predicate }}</span> <a href="{{ rel.objects[0].url}}">{{ rel.objects[0].title }}</a></dd>
+    {% endfor %}
+    {% for rel in obs %}
+    <dd><a href="{{ rel.subjects[0].url}}">{{ rel.subjects[0].title }}</a> <span class="predicate">{{ rel.predicate }}</span></dd>
+    {% endfor %}
   {% endfor %}
   </dl>
-
-  <h3>Subject of Relations</h3>
-  <ul>
-  {% for r in results.get('subjects', []) %}
-    {% set subject = r.subjects[0] %}
-    {% set object = r.objects[0] %}
-    <li><a href="{{ subject.url}}">{{ subject.title }}</a> {{ r.predicate }} <a href="{{ object.url}}">{{ object.title }}</a></li>
-  {% endfor %}
-  </ul>
-  
-  <h3>Object of Relations</h3>
-  <ul>
-  {% for r in results.get('objects', []) %}
-    {% set subject = r.subjects[0] %}
-    {% set object = r.objects[0] %}
-    <li><a href="{{ subject.url}}">{{ subject.title }}</a> {{ r.predicate }} <a href="{{ object.url}}">{{ object.title }}</a></li>
-  {% endfor %}
-  </ul>
-  {% endif %}
   
 </div><!-- class="yui-g" -->
+{% endif %}
 
 </div><!-- id="bd" -->
 

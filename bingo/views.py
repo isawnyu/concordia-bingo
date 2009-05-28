@@ -1,6 +1,6 @@
-#from repoze.bfg.chameleon_zpt import render_template_to_response
 from repoze.bfg.interfaces import IRequest
 from repoze.bfg.jinja2 import render_template_to_response
+from repoze.bfg.url import model_url
 from repoze.bfg.view import static
 import zc.relation.catalog
 from zc.relation import RELATION
@@ -19,36 +19,45 @@ def my_view(context, request):
                                        project = 'Bingo')
                                        
 def search_view(context, request):
-    results = None
+    results = []
     errormsg = None
-    if 'q' in request.params:
+    q = request.params.get('q')
+    if q:
         md = context.metadata_catalog
         try:
-            numdocs, results = md.search(text=request.params['q'])
-            resources = sorted(context.intids.getObject(r) for r in results)
+            numdocs, tokens = md.search(text=q)
+            resources = sorted((context.intids.getObject(t), t) for t in tokens)
             rc = context.relation_catalog
-            query = rc.tokenizeQuery
-            subjects = rc.findRelations(
-                dict(subject=zc.relation.catalog.any(*results))
-                )
-            objects = rc.findRelations(
-                dict(object=zc.relation.catalog.any(*results))
-                )
-            results = dict(
-                        resources=resources, 
-                        subjects=subjects, 
-                        objects=objects
-                        )
+            for res, token in resources:
+                subs = rc.findRelations(
+                    dict(subject=token)
+                    )
+                objs = rc.findRelations(
+                    dict(object=token)
+                    )
+                results.append(
+                    dict(resource=res, subjects=subs, objects=objs)
+                    )
         except Exception, e:
             errormsg = str(e)
         # endif
-    return render_template_to_response('templates/search_view.pt',
+    return render_template_to_response('templates/search_form.pt',
                                        title=context.title,
                                        request=request,
-                                       results=results,
+                                       results=results or None,
                                        errormsg=errormsg
                                        )
 
-def append_view(context, request):
-    return Response("POST "+request.body+"\n")
+def append_item(context, request):
+    return Response("POST " + str(request.headers) + " " + str(request.body) + "\n")
 
+def append_form(context, request):
+    errormsg = None
+    url = model_url(context, request)
+    return render_template_to_response('templates/append_form.pt',
+                                       context=context,
+                                       request=request,
+                                       context_url=url,
+                                       errormsg=errormsg
+                                       )
+    

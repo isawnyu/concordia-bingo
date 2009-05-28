@@ -5,17 +5,32 @@ import sys
 import BTrees
 from persistent import Persistent
 from persistent.mapping import PersistentMapping
-from zope.interface import Attribute, Interface, implements
-from zope.intid import IntIds
+from repoze.bfg.log import make_stream_logger
 import repoze.catalog.catalog
 from repoze.catalog.indexes.text import CatalogTextIndex
 from repoze.folder import Folder
+import transaction
 import zc.relation.catalog
+from ZODB.interfaces import IConnection
+from zope.interface import Attribute, Interface, implements
+from zope.intid import IntIds
+from zope.keyreference.interfaces import IKeyReference
+from zope.keyreference.persistent import connectionOfPersistent
 
-from repoze.bfg.log import make_stream_logger
 
 logger = make_stream_logger('ZODB.FileStorage', sys.stderr)
 
+
+class Error(Exception):
+    pass
+    
+
+class BingoError(Error):
+    def __init__(self, msg):
+        self.msg = msg
+    def __str__(self):
+        return self.msg
+    
 
 class IModel(Interface):
     pass
@@ -45,6 +60,7 @@ class IBingoItem(Interface):
 class IResource(IBingoItem):
     pass
 
+
 class BingoContainer(Folder):
     implements(IBingoContainer)
     
@@ -64,16 +80,71 @@ class BingoContainer(Folder):
     def metadata_catalog(self):
         return self.get('_metadata_catalog')
     
-    def add(self, name, obj):
-        # Registers and catalogs
-        import transaction
-        self[name] = obj
+    def addRelation(self, name, subj, predicate, obj):
+        # Add relation between already added resources
+        if name in self:
+            raise BingoError, "Can not replace existing Bingo relation"
+        if self.intids.queryId(subj) is None:
+            raise BingoError, "Relation subject has no uid"
+        if self.intids.queryId(obj) is None:
+            raise BingoError, "Relation object has no uid"
+        savepoint = transaction.savepoint()
+        try:
+            relation = Relation((subj,), predicate, (obj,))
+            self[name] = relation
+            savepoint = transaction.savepoint()
+            uid = self.intids.register(relation)
+            self.relation_catalog.index_doc(uid, relation)
+        except:
+            savepoint.rollback()
+            raise
         transaction.commit()
-        i = self.intids.register(obj)
-        self.relation_catalog.index_doc(i, obj)
-        if IResource.providedBy(obj):
-            self.metadata_catalog.index_doc(i, obj)
-        transaction.commit()
+        return (name, uid)
+        
+    def addResource(self, name, resource):
+        # Safely overwrites placeholders, registers, and catalogs
+        if name in self:
+            current = self[name]
+            if IResource.providedBy(current):
+                raise BingoError, "Can not replace existing Bingo item"
+            else:
+                # Step in for placeholder, keeping existing intid
+                savepoint = transaction.savepoint()
+                try:
+                    uid = self.intids.getId(current)
+                    del self[name]
+                    self[name] = resource
+                    key = IKeyReference(resource)
+                    self.intids.refs[uid] = key
+                    self.intids.ids[key] = uid
+                    if IResource.providedBy(resource):
+                        self.metadata_catalog.index_doc(uid, resource)
+                except:
+                    savepoint.rollback()
+                    raise
+                transaction.commit()
+                return (name, uid)
+        else:
+            savepoint = transaction.savepoint()
+            try:
+                self[name] = resource
+                uid = self.intids.register(resource)
+                if IResource.providedBy(resource):
+                    self.metadata_catalog.index_doc(uid, resource)
+            except:
+                savepoint.rollback()
+                raise
+            transaction.commit()
+            return (name, uid)
+
+
+def dumpPersistent(obj, catalog, cache):
+    intids = catalog.__parent__['_intids']
+    return intids.queryId(obj)
+
+def loadPersistent(token, catalog, cache):
+    intids = catalog.__parent__['_intids']
+    return intids.getObject(token)
 
 
 class IRelationCatalog(Interface):
@@ -84,7 +155,14 @@ class RelationCatalog(zc.relation.catalog.Catalog):
     implements(IRelationCatalog)
 
 
-class Resource(Persistent):
+class Connected(Persistent):
+    # Allowing key references to be had for unsaved objects
+    def __conform__(self, iface):
+        if iface is IConnection:
+            return connectionOfPersistent(self.__parent__)
+    
+
+class Resource(Connected):
     implements(IResource)
     def __init__(self, title, summary=None, url=None, where=None):
         self.title = title
@@ -104,7 +182,7 @@ class IRelation(IBingoItem):
     objects = Attribute('objects')
 
 
-class Relation(Persistent):
+class Relation(Connected):
     implements(IRelation)
     def __init__(self, subjects, predicate, objects):
         self.subjects = subjects
@@ -113,13 +191,20 @@ class Relation(Persistent):
     def __str__(self):
         return u'<(%s) : %s : (%s)>' % (u', '.join([unicode(r) for r in self.subjects]), self.predicate, ', '.join([unicode(r) for r in self.objects]))
 
-def dumpPersistent(obj, catalog, cache):
-    intids = catalog.__parent__['_intids']
-    return intids.queryId(obj)
 
-def loadPersistent(token, catalog, cache):
-    intids = catalog.__parent__['_intids']
-    return intids.getObject(token)
+class IPlaceholder(IBingoItem):
+    pass
+    
+    
+class Placeholder(Connected):
+    implements(IPlaceholder)
+    title = u'Untitled placeholder'
+    summary = u'Unsummarized placeholder'
+    where = None
+    def __init__(self, url=None):
+        self.url = url
+    def __str__(self):
+        return u'<%s>' % self.title
 
 
 # Relation vocabulary
@@ -133,11 +218,12 @@ def appmaker(zodb_root):
         import transaction
         app_root = BingoModel()
         zodb_root['app_root'] = app_root
-        concordia = app_root['concordia'] = BingoContainer('Concordia')
+        concordia = app_root[u'concordia'] = BingoContainer('Concordia')
+        concordia.__name__ = u'concordia'
         concordia['_intids'] = IntIds()
-        catalog = concordia['_metadata_catalog'] = MetadataCatalog()
-        catalog['text'] = CatalogTextIndex('searchable_text')
-        catalog = concordia['_relation_catalog'] = RelationCatalog(dumpPersistent, loadPersistent, BTrees.family32.IO)
+        catalog = concordia[u'_metadata_catalog'] = MetadataCatalog()
+        catalog['text'] = CatalogTextIndex(u'searchable_text')
+        catalog = concordia[u'_relation_catalog'] = RelationCatalog(dumpPersistent, loadPersistent, BTrees.family32.IO)
         catalog.addValueIndex(
             IRelation['subjects'], dumpPersistent, loadPersistent,
             multiple=True, name='subject'
@@ -151,24 +237,52 @@ def appmaker(zodb_root):
             )
         transaction.commit()
 
+        # Add a placeholder to be clobbered
+        x = Placeholder(
+                url=u'http://insaph.kcl.ac.uk/iaph2007/iAph040202.html'
+                )
+        concordia.addResource(u'insaph.kcl.ac.uk/iaph2007/iAph040202.html', x)
+        
+        # Clobber preceeding placeholder
         a = Resource(
                 u"4.202. Verse honours: i. for Ampelios, father of the city; ii. and iii. for Doulkitios, governor, on the Agora Gate",
                 summary=u"i., ii. and iii are all cut, clearly set out as a group, on the façade, on the highest remaining course of blocks, which was capped above by a moulded course. i. is cut on the northernmost of a series of projecting bastions; ii. is on the next bastion to the south, whose surface is largely lost; three loose fragments were found in 1983. The third bastion shows no sign of any inscription; iii. is cut on the fourth. i. and ii. are on a smooth face, but iii. is cut partly on a rough surface.",
                 url=u"http://insaph.kcl.ac.uk/iaph2007/iAph040202.html"
                 )
-        concordia.add('a', a)
+        concordia.addResource(u'insaph.kcl.ac.uk/iaph2007/iAph040202.html', a)
         
         b = Resource(
                 u"Aphrodisias",
                 summary=u"Attested as \u1f08\u03c6\u03c1\u03bf\u03b4\u03b9\u03c3\u03af\u03b1\u03b4\u03bf\u03c2 during Roman, early Empire (30 BC-AD 300) (confident) and Late Antique (AD 300-AD 640) (confident) periods",
                 url=u"http://bacchus.atlantides.org/places/638753/aphrodisias"
+                )
+        concordia.addResource(
+            u'bacchus.atlantides.org/places/638753/aphrodisias', 
+            b
             )
-        concordia.add('b', b)
 
-        r1 = Relation((a,), ATTESTATION, (b,))
-        concordia.add('r1', r1)
-
-        r2 = Relation((b,), REFERENCE, (a,))
-        concordia.add('r2', r2)
+        # Relate A and B
+        concordia.addRelation(
+        u'insaph.kcl.ac.uk/iaph2007/iAph040202.html--%s--bacchus.atlantides.org/places/638753/aphrodisias' % ATTESTATION, 
+            a, 
+            ATTESTATION, 
+            b
+            )
+        concordia.addRelation(
+        u'bacchus.atlantides.org/places/638753/aphrodisias--%s--insaph.kcl.ac.uk/iaph2007/iAph040202.html' % REFERENCE,
+            b,
+            REFERENCE,
+            a
+            )
+            
+        # Relate B to a placeholder
+        c = Placeholder(url=u'http://en.wikipedia.org/wiki/Aphrodisias')
+        concordia.addResource(u'en.wikipedia.org/wiki/Aphrodisias', c)
+        concordia.addRelation(
+        'bacchus.atlantides.org/places/638753/aphrodisias--%s--en.wikipedia.org/wiki/Aphrodisias' % 'related',
+            b,
+            'related',
+            c
+            )
             
     return zodb_root['app_root']
