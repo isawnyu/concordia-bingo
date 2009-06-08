@@ -220,6 +220,7 @@ def appmaker(zodb_root):
         zodb_root['app_root'] = app_root
         concordia = app_root[u'concordia'] = BingoContainer('Concordia')
         concordia.__name__ = u'concordia'
+        concordia.__parent__ = app_root
         concordia['_intids'] = IntIds()
         catalog = concordia[u'_metadata_catalog'] = MetadataCatalog()
         catalog['text'] = CatalogTextIndex(u'searchable_text')
