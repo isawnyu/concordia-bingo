@@ -64,11 +64,11 @@ def append_item(context, request):
         errormsg = str(e)
         raise
     
-    # Required
-    title = getattr(entry.find('{%s}title' % ATOMNS), 'text')
-    summary = getattr(entry.find('{%s}summary' % ATOMNS), 'text')
-    s_url = ([e.attrib['href'] for e in entry.findall('{%s}link' % ATOMNS) if e.attrib['rel'] == 'alternate'] or [None])[0]
-    assert not 
+    # # Required
+    # title = getattr(entry.find('{%s}title' % ATOMNS), 'text')
+    # summary = getattr(entry.find('{%s}summary' % ATOMNS), 'text')
+    # s_url = ([e.attrib['href'] for e in entry.findall('{%s}link' % ATOMNS) if e.attrib['rel'] == 'alternate'] or [None])[0]
+    # assert not 
     return Response("POST " + str(request.headers) + " " + str(request.body) + "\n")
 
 def append_form(context, request):

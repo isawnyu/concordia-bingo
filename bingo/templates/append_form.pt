@@ -8,33 +8,53 @@
 <title>Bingo :: {{ context.title }} :: add item</title>
 <link href="/@@static/main.css" rel="stylesheet"/>
 <link rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/"/>
-<link rel="service" href="http://localhost:6543/concordia"/>
-<script type="text/javascript" src="/@@static/atom.js"></script>
+<link rel="service" href="{{ context_url }}"/>
+<script type="text/javascript" src="/@@static/OpenLayers.js"></script>
 <script type="text/javascript" src="/@@static/jquery-1.3.2.min.js"></script>
-<script type="text/javascript">
+<script type="text/javascript" defer="defer">
     function postItem() {
-        var slug = $("#form-slug").val();
-        var title = $("#form-title").val();
-        var summary = $("#form-summary").val();
-        var link = new BingoLink("http://example.com/foo", "related");
-        var entry = new BingoEntry(title, summary, [link]);
-        
-        $.ajax({
-            async: false,
-            type: "POST",
-            url: $("link[rel=service]").attr("href"),
-            data: entry.dumps(),
-            processData: false,
-            success: function(msg) {
-                alert( "Data Saved: " + msg );
-            },
-            beforeSend: function(req) {
-                req.setRequestHeader("Slug", slug);
-            }
-        });
+      var slug = $("#form-slug").val();
+      var title = $("#form-title").val();
+      var summary = $("#form-summary").val();
+      var where = $("#form-where").val();
+      var linkItems = $("#links-list li");
+      var links = new Array(linkItems.length);
+      var item = null;
+      var data = null;
+      for (var i=0; i<linkItems.length; i++) {
+        item = linkItems[i];
+        data = { 
+          href: $(item).children("#link-href")[0].value,
+          rel: $(item).children("#link-rel")[0].value,
+        };
+        links[i] = data;
+      }
+      var reader = new OpenLayers.Format.GeoJSON();
+      var geom = reader.read(where, "Geometry");
+      var atomAttrib = { "title": title, "summary": summary, "links": links }
+      var entry = new OpenLayers.Feature.Vector(geom, {atom: atomAttrib}); 
+      var writer = new OpenLayers.Format.Atom();
+      
+      $.ajax({
+        async: false,
+        type: "POST",
+        url: $("link[rel=service]").attr("href"),
+        data: writer.write(entry),
+        processData: false,
+        success: function(msg) {
+            alert( "Data Saved: " + msg );
+        },
+        beforeSend: function(req) {
+            req.setRequestHeader("Slug", slug);
+        }
+      });
 
-        // options.requestHeaders.push("Authorization");
-        // options.requestHeaders.push("Basic YWRtaW46OGZjOGFkZmM=");
+      // options.requestHeaders.push("Authorization");
+      // options.requestHeaders.push("Basic YWRtaW46OGZjOGFkZmM=");
+    }
+    
+    function addLinkField() {
+      $("#links-list").append('<li><span>href: </span><input type="text" id="link-href" name="link-href" size="60"/>&nbsp;<span>rel: </span><input type="text" id="link-rel" name="link-rel" size="20"/></li>');
     }
 </script>
 </head>
@@ -54,7 +74,7 @@
 <div class="yui-g">
   <h3>Add an item</h3>
   
-  <form id="form" action="javascript:postItem();">
+  <form id="form" action="javascript:postItem()">
     <div class="form-field">
       <label for="form-slug">Name</label><br/>
       <input id="form-slug" type="text" name="slug" size="60"/>
@@ -66,7 +86,18 @@
     <div class="form-field">
       <label for="form-summary">Summary</label><br/>
      <textarea id="form-summary" rows="5" cols="60" name="summary"></textarea><br/>
-    </div><div class="form-field">
+    </div>
+    <div class="form-field">
+      <label for="links-list">Links</label><br/>
+      <ul id="links-list">
+        <li>
+          <span>href: </span><input type="text" id="link-href" name="link-href" size="60"/>&nbsp;<span>rel: </span><input type="text" id="link-rel" name="link-rel" size="20"/>
+        </li>
+      </ul>
+      <input type="button" id="links-list-add" onclick="addLinkField()"/>
+      <label for="links-list-add">Add another link</label>
+    </div>
+    <div class="form-field">
       <label for="form-where">Position (GeoJSON geometry format)</label><br/>
       <input id="form-where" type="text" name="where" size="60"/><br/>
     </div>
